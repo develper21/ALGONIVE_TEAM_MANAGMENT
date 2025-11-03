@@ -7,10 +7,12 @@ import { UserContext } from "../../context/userContext";
 import { validateEmail } from "../../utils/helper";
 import { FaGoogle, FaApple } from "react-icons/fa";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { useNotification } from "../../context/NotificationContext";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { addNotification } = useNotification();
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const { updateUser } = useContext(UserContext);
@@ -47,12 +49,15 @@ const Login = () => {
           navigate("/user/dashboard");
         }
       }
+      addNotification({
+        message: "Login successfull!",
+        type: "success",
+      })
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Something went wrong, please try again later.");
-      }
+      addNotification({
+        message: err.response?.data?.message || "Something went wrong. Please try again later.",
+        type: "error",
+      })
     }
   };
 
