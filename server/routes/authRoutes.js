@@ -7,13 +7,19 @@ const {
 } = require("../controllers/authController");
 const { protect } = require("../middlewares/authMiddleware");
 const upload = require("../middlewares/uploadMiddleware");
+const { authLimiter, strictLimiter } = require("../middlewares/securityMiddleware");
+const {
+  validateRegistration,
+  validateLogin,
+  validateProfileUpdate,
+} = require("../middlewares/validationMiddleware");
 
 const router = express.Router();
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
+router.post("/register", authLimiter, validateRegistration, registerUser);
+router.post("/login", authLimiter, validateLogin, loginUser);
 router.get("/profile", protect, getUserProfile);
-router.put("/profile", protect, updateUserProfile);
+router.put("/profile", protect, validateProfileUpdate, updateUserProfile);
 
 router.post("/upload-image", upload.single("image"), (req, res) => {
   if (!req.file) {
