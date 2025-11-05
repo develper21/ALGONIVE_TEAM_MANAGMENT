@@ -18,7 +18,7 @@ const registerUser = async (req, res) => {
     // check if user already exists
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(500).json({ message: "User Already Exists!" });
+      return res.status(409).json({ message: "User Already Exists!" });
     }
 
     // determine user role: admin if correct token is provided otherwise member
@@ -35,7 +35,7 @@ const registerUser = async (req, res) => {
     const hashPassword = await bcrypt.hash(password, salt);
 
     // create new user
-    const user = User.create({
+    const user = await User.create({
       name,
       email,
       password: hashPassword,
@@ -45,15 +45,16 @@ const registerUser = async (req, res) => {
 
     // return user data with JWT
     res.status(201).json({
-      _id: (await user)._id,
-      name: (await user).name,
-      email: (await user).email,
-      role: (await user).role,
-      profileImageUrl: (await user).profileImageUrl,
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      profileImageUrl: user.profileImageUrl,
       token: generateToken(user._id),
     });
   } catch (error) {
-    res.status(500).json({ message: "server error!", error: error.message });
+    console.error("Registration error:", error);
+    res.status(500).json({ message: "Server error during registration", error: error.message });
   }
 };
 
