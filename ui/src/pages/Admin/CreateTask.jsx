@@ -3,7 +3,7 @@ import DashboardLayout from "../../components/layouts/DashboardLayout";
 import { PRIORITY_DATA } from "../../utils/data";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
-import toast from "react-hot-toast";
+import { useNotification } from "../../context/NotificationContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LuTrash2 } from "react-icons/lu";
 import SelectDropdown from "../../components/Inputs/SelectDropdown";
@@ -18,6 +18,7 @@ const CreateTask = () => {
   const location = useLocation();
   const { taskId } = location.state || {};
   const navigate = useNavigate();
+  const { addNotification } = useNotification();
 
   const [taskData, setTaskData] = useState({
     title: "",
@@ -67,10 +68,14 @@ const CreateTask = () => {
         todoChecklist: todoList,
       });
 
-      toast.success("Task Created Successfully");
+      addNotification({ message: "Task Created Successfully", type: "success" });
       clearData();
     } catch (error) {
       console.error("Error Creating Task", error);
+      addNotification({ 
+        message: error.response?.data?.message || "Failed to create task", 
+        type: "error" 
+      });
       setLoading(false);
     } finally {
       setLoading(false);
@@ -100,9 +105,13 @@ const CreateTask = () => {
         }
       );
 
-      toast.success("Task Updated Successfully");
+      addNotification({ message: "Task Updated Successfully", type: "success" });
     } catch (error) {
       console.error("Error Updating Task: ", error);
+      addNotification({ 
+        message: error.response?.data?.message || "Failed to update task", 
+        type: "error" 
+      });
       setLoading(false);
     } finally {
       setLoading(false);
@@ -172,6 +181,10 @@ const CreateTask = () => {
       }
     } catch (error) {
       console.error("Error Fetching Users", error);
+      addNotification({ 
+        message: error.response?.data?.message || "Failed to fetch task details", 
+        type: "error" 
+      });
     }
   };
 
@@ -180,13 +193,17 @@ const CreateTask = () => {
     try {
       await axiosInstance.delete(API_PATHS.TASKS.DELETE_TASK(taskId));
       setOpenDeleteAlert(false);
-      toast.success("Task Deleted Successfully");
+      addNotification({ message: "Task Deleted Successfully", type: "success" });
       navigate("/admin/tasks");
     } catch (error) {
       console.error(
         "Error deleting Task: ",
         error.response?.data?.message || error.message
       );
+      addNotification({ 
+        message: error.response?.data?.message || "Failed to delete task", 
+        type: "error" 
+      });
     }
   };
 
