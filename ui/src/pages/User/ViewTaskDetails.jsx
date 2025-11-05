@@ -6,10 +6,12 @@ import DashboardLayout from "../../components/layouts/DashboardLayout";
 import moment from "moment";
 import AvatarGroup from "../../components/AvatarGroup";
 import { LuSquareArrowOutUpRight } from "react-icons/lu";
+import { useNotification } from "../../context/NotificationContext";
 
 const ViewTaskDetails = () => {
   const { id } = useParams();
   const [task, setTask] = useState(null);
+  const { addNotification } = useNotification();
 
   const getStatusTagColor = () => {
     switch (task?.status) {
@@ -35,6 +37,10 @@ const ViewTaskDetails = () => {
       }
     } catch (error) {
       console.error("Error Fetching Task By ID:", error);
+      addNotification({ 
+        message: error.response?.data?.message || "Failed to fetch task details", 
+        type: "error" 
+      });
     }
   };
 
@@ -52,12 +58,20 @@ const ViewTaskDetails = () => {
         );
         if (response.status === 200) {
           setTask(response.data?.task || task);
+          addNotification({ 
+            message: "Checklist updated successfully", 
+            type: "success" 
+          });
         } else {
           // optionally revert the toggle if API fails
           todoChecklist[index].completed = !todoChecklist[index].completed;
         }
       } catch (error) {
         todoChecklist[index].completed = !todoChecklist[index].completed;
+        addNotification({ 
+          message: error.response?.data?.message || "Failed to update checklist", 
+          type: "error" 
+        });
       }
     }
   };
