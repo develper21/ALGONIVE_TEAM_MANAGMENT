@@ -7,7 +7,7 @@ import { Label } from "recharts";
 import { LuFileSpreadsheet } from "react-icons/lu";
 import TaskStatusTabs from "../../components/TaskStatusTabs";
 import TaskCard from "../../components/Cards/TaskCard";
-import toast from "react-hot-toast";
+import { useNotification } from "../../context/NotificationContext";
 
 const MyTasks = () => {
   const [allTasks, setAllTasks] = useState([]);
@@ -15,6 +15,7 @@ const MyTasks = () => {
   const [filterStatus, setFilterStatus] = useState("All");
 
   const navigate = useNavigate();
+  const { addNotification } = useNotification();
 
   const getAllTasks = async () => {
     try {
@@ -39,6 +40,10 @@ const MyTasks = () => {
       setTabs(statusArray);
     } catch (error) {
       console.error("Error Fetching Users", error);
+      addNotification({ 
+        message: error.response?.data?.message || "Failed to fetch tasks", 
+        type: "error" 
+      });
     }
   };
 
