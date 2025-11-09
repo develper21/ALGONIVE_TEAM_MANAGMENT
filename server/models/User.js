@@ -25,6 +25,14 @@ const UserSchema = new mongoose.Schema(
       type: String, 
       default: null 
     },
+    gender: {
+      type: String,
+      enum: {
+        values: ["male", "female", "other"],
+        message: "Gender must be male, female, or other"
+      },
+      default: "male"
+    },
     role: { 
       type: String, 
       enum: {
@@ -33,6 +41,35 @@ const UserSchema = new mongoose.Schema(
       },
       default: "member" 
     },
+    bio: {
+      type: String,
+      maxlength: [500, "Bio cannot exceed 500 characters"],
+      default: ""
+    },
+    skills: [{
+      type: String,
+      trim: true
+    }],
+    experience: [{
+      company: String,
+      position: String,
+      startDate: Date,
+      endDate: Date,
+      current: { type: Boolean, default: false },
+      description: String
+    }],
+    resumeUrl: {
+      type: String,
+      default: null
+    },
+    socialLinks: {
+      twitter: { type: String, default: "" },
+      linkedin: { type: String, default: "" },
+      instagram: { type: String, default: "" },
+      github: { type: String, default: "" },
+      leetcode: { type: String, default: "" },
+      website: { type: String, default: "" }
+    },
   },
   { 
     timestamps: true,
@@ -40,6 +77,22 @@ const UserSchema = new mongoose.Schema(
     toObject: { virtuals: true }
   }
 );
+
+// Virtual field for profile display URL with gender-based defaults
+UserSchema.virtual('profileDisplayUrl').get(function() {
+  if (this.profileImageUrl) {
+    return this.profileImageUrl;
+  }
+  
+  // Return default icon based on gender
+  const defaultIcons = {
+    male: 'https://api.dicebear.com/7.x/avataaars/svg?seed=male&backgroundColor=b6e3f4',
+    female: 'https://api.dicebear.com/7.x/avataaars/svg?seed=female&backgroundColor=ffd5dc&hair=long',
+    other: 'https://api.dicebear.com/7.x/avataaars/svg?seed=person&backgroundColor=d1d4f9'
+  };
+  
+  return defaultIcons[this.gender] || defaultIcons.male;
+});
 
 // Index for faster queries
 UserSchema.index({ email: 1 }, { unique: true });
