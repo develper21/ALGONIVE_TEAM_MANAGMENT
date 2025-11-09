@@ -28,7 +28,8 @@ axiosInstance.interceptors.response.use(
     // handle common error globally
     if (error.response) {
       if (error.response.status === 401) {
-        // redirect to login page
+        // Clear localStorage and redirect to login page
+        localStorage.clear();
         window.location.href = "/login";
       } else if (error.response.status === 500) {
         console.error("Server Error!, please try again later...");
@@ -36,6 +37,7 @@ axiosInstance.interceptors.response.use(
     } else if (error.code === "ECONNABORTED") {
       console.error("Request Timeout, Please try again...");
     }
+    return Promise.reject(error);
   }
 );
 
