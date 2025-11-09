@@ -33,4 +33,28 @@ export const API_PATHS = {
   IMAGE: {
     UPLOAD_IMAGE: "/api/auth/upload-image",
   },
+  MESSAGES: {
+    SEND_MESSAGE: "/api/messages",
+    GET_TASK_MESSAGES: (taskId) => `/api/messages/${taskId}`,
+    GET_UNREAD_COUNT: (taskId) => `/api/messages/${taskId}/unread-count`,
+    DELETE_MESSAGE: (messageId) => `/api/messages/${messageId}`,
+  },
+  NOTIFICATIONS: {
+    GET_ALL: "/api/notifications",
+    GET_UNREAD_COUNT: "/api/notifications/unread-count",
+    MARK_AS_READ: (notificationId) => `/api/notifications/${notificationId}/read`,
+    MARK_ALL_READ: "/api/notifications/mark-all-read",
+    DELETE: (notificationId) => `/api/notifications/${notificationId}`,
+    CLEAR_READ: "/api/notifications/clear-read",
+  },
+  DISCUSSIONS: {
+    CREATE: "/api/discussions",
+    GET_ALL: "/api/discussions",
+    GET_BY_ID: (discussionId) => `/api/discussions/${discussionId}`,
+    DELETE: (discussionId) => `/api/discussions/${discussionId}`,
+    ADD_REPLY: (discussionId) => `/api/discussions/${discussionId}/reply`,
+    ADD_REACTION: (discussionId, replyId) => `/api/discussions/${discussionId}/reply/${replyId}/reaction`,
+    MARK_ANSWER: (discussionId, replyId) => `/api/discussions/${discussionId}/reply/${replyId}/mark-answer`,
+    UPDATE_STATUS: (discussionId) => `/api/discussions/${discussionId}/status`,
+  },
 };
