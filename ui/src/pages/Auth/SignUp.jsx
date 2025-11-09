@@ -1,11 +1,9 @@
 import React, { useContext, useState } from "react";
 import AuthLayout from "../../components/layouts/AuthLayout";
 import { Link, useNavigate } from "react-router-dom";
-import ProfilePhotoSelector from "../../components/Inputs/ProfilePhotoSelector";
 import { useNotification } from "../../context/NotificationContext";
 import Input from "../../components/Inputs/Input";
 import { validateEmail } from "../../utils/helper";
-import uploadImage from "../../utils/uploadImage";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_PATHS } from "../../utils/apiPaths";
 import { UserContext } from "../../context/userContext";
@@ -13,10 +11,10 @@ import { FaGoogle, FaApple } from "react-icons/fa";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 
 const SignUp = () => {
-  const [profilePic, setProfilePic] = useState(null);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [gender, setGender] = useState("male");
   const [adminInviteToken, setAdminInviteToken] = useState("");
   const { addNotification } = useNotification();
   const [error, setError] = useState(null);
@@ -47,18 +45,11 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      let profileImageUrl = "";
-
-      if (profilePic) {
-        const imageUploadRes = await uploadImage(profilePic);
-        profileImageUrl = imageUploadRes?.imageUrl || "";
-      }
-
       const response = await axiosInstance.post(API_PATHS.AUTH.REGISTER, {
         name: fullName,
         email,
         password,
-        profileImageUrl,
+        gender,
         adminInviteToken,
       });
 
@@ -106,9 +97,6 @@ const SignUp = () => {
             <h2 className="text-2xl font-semibold text-gray-900">Create an Account</h2>
             <p className="text-sm text-slate-600">Join us today by entering your details below</p>
 
-            {/* Profile photo selector (uses your existing component) */}
-            <ProfilePhotoSelector image={profilePic} setImage={setProfilePic} />
-
             {/* Form */}
             <form onSubmit={handleSignUp} className="flex flex-col gap-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -148,11 +136,24 @@ const SignUp = () => {
                   </div>
                 </div>
 
+                <div>
+                  <label className="text-sm text-gray-700">Gender</label>
+                  <select
+                    value={gender}
+                    onChange={({ target }) => setGender(target.value)}
+                    className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
                 <Input
                   value={adminInviteToken}
                   onChange={({ target }) => setAdminInviteToken(target.value)}
-                  label="Admin Invite Token"
-                  placeholder="6 Digit Code"
+                  label="Admin Invite Token (Optional)"
+                  placeholder="Leave empty for member role"
                   type="text"
                 />
               </div>
@@ -202,33 +203,35 @@ const SignUp = () => {
             </div>
           </div>
 
-          {/* RIGHT - VISUAL / VIDEO */}
-          <div className="md:w-1/2 relative bg-gradient-to-br from-indigo-50 to-white p-8 flex items-center justify-center">
-            <div className="w-full h-full rounded-xl border border-gray-100 bg-white/60 backdrop-blur-sm p-6 flex flex-col gap-4 justify-between">
-              <div>
-                <span className="inline-block text-xs px-3 py-1 rounded-full bg-white/40 border text-gray-600">
-                  IQM SYSTEMS Pressure Control
-                </span>
-
-                <h3 className="mt-4 text-lg font-semibold text-gray-800">
-                  Manage your concreting and construction operations{" "}
-                  <span className="text-indigo-600">more professionally</span>
-                </h3>
-
-                <p className="text-sm text-gray-500 mt-2">
-                  Please define your project structures before start creating Pour sessions.
-                </p>
-              </div>
-
-              <div className="flex-1 flex items-center justify-center">
-                <div className="w-full rounded-lg overflow-hidden border border-gray-100 shadow-sm">
-                  <video
-                    src=""
-                    poster="/images/dashboard-preview.png"
-                    className="w-full h-64 object-cover"
-                  />
+          {/* RIGHT - PREVIEW */}
+          <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-10 flex-col justify-between items-center text-white relative overflow-hidden">
+            <div className="max-w-md z-10">
+              <h2 className="text-3xl font-bold mb-4">Welcome to Algonive</h2>
+              <p className="text-lg mb-6">
+                Manage your team efficiently with our powerful task management system.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">✓</div>
+                  <span>Real-time collaboration</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">✓</div>
+                  <span>Task tracking & notifications</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">✓</div>
+                  <span>Team performance analytics</span>
                 </div>
               </div>
+            </div>
+            {/* GIF Animation - Bottom Right */}
+            <div className="absolute bottom-0 right-0 w-72 h-72 opacity-90">
+              <img 
+                src="/src/assets/teamwork.gif" 
+                alt="Team collaboration" 
+                className="w-full h-full object-contain"
+              />
             </div>
 
             <div className="pointer-events-none absolute inset-2 rounded-2xl border border-white mix-blend-screen opacity-30"></div>

@@ -163,37 +163,36 @@ const Login = () => {
             </div>
           </div>
 
-          {/* RIGHT - VISUAL / VIDEO */}
-          <div className="md:w-1/2 relative bg-gradient-to-br from-indigo-50 to-white p-8 flex items-center justify-center">
-            <div className="w-full h-full rounded-xl border border-gray-100 bg-white/60 backdrop-blur-sm p-6 flex flex-col gap-4 justify-between">
-              <div>
-                <span className="inline-block text-xs px-3 py-1 rounded-full bg-white/40 border text-gray-600">
-                  IQM SYSTEMS Pressure Control
-                </span>
-
-                <h3 className="mt-4 text-lg font-semibold text-gray-800">
-                  Manage your concreting and construction operations{" "}
-                  <span className="text-indigo-600">more professionally</span>
-                </h3>
-
-                <p className="text-sm text-gray-500 mt-2">
-                  Please define your project structures before start creating Pour sessions.
-                </p>
-              </div>
-
-              <div className="flex-1 flex items-center justify-center">
-                {/* Use a video tag or an image poster. Replace src with actual video file if available */}
-                <div className="w-full rounded-lg overflow-hidden border border-gray-100 shadow-sm">
-                  <video
-                    src=""
-                    poster="/images/dashboard-preview.png"
-                    className="w-full h-64 object-cover"
-                  />
+          {/* RIGHT - PREVIEW */}
+          <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-10 flex-col justify-between items-center text-white relative overflow-hidden">
+            <div className="max-w-md z-10">
+              <h2 className="text-3xl font-bold mb-4">Welcome Back!</h2>
+              <p className="text-lg mb-6">
+                Continue managing your team and tracking progress with Algonive.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">✓</div>
+                  <span>Track team performance</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">✓</div>
+                  <span>Manage tasks efficiently</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">✓</div>
+                  <span>Real-time notifications</span>
                 </div>
               </div>
             </div>
-
-            {/* faint decorative frame (to mimic outer rounded white border in design) */}
+            {/* GIF Animation - Bottom Right */}
+            <div className="absolute bottom-0 right-0 w-72 h-72 opacity-90">
+              <img 
+                src="/src/assets/teamwork2.gif" 
+                alt="Team collaboration" 
+                className="w-full h-full object-contain"
+              />
+            </div>
             <div className="pointer-events-none absolute inset-2 rounded-2xl border border-white mix-blend-screen opacity-30"></div>
           </div>
         </div>
