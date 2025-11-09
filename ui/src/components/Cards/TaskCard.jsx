@@ -42,7 +42,7 @@ const TaskCard = ({
 
   return (
     <div
-      className="bg-white rounded-xl py-4 shadow-md shadow-gray-100 border border-gray-200/50 cursor-pointer"
+      className="bg-white dark:bg-slate-800 rounded-xl py-4 shadow-md shadow-gray-100 dark:shadow-slate-900/50 border border-gray-200 dark:border-slate-700 cursor-pointer hover:shadow-lg transition-shadow"
       onClick={onClick}
     >
       <div className="flex items-end gap-3 px-4">
@@ -68,15 +68,15 @@ const TaskCard = ({
             : "border-violet-500"
         }`}
       >
-        <p className="text-sm font-medium text-gray-800 mt-4 line-clamp-2">
+        <p className="text-sm font-medium text-gray-900 dark:text-white mt-4 line-clamp-2">
           {title}
         </p>
-        <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-[18px]">
+        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1.5 line-clamp-2 leading-[18px]">
           {description}
         </p>
-        <p className="text-[13px] text-gray-700/80 font-medium mt-2 mb-2 leading-[18px]">
+        <p className="text-[13px] text-gray-700 dark:text-gray-300 font-medium mt-2 mb-2 leading-[18px]">
           Task Done:{" "}
-          <span className="font-semibold text-gray-700">
+          <span className="font-semibold text-gray-900 dark:text-white">
             {completedTodoCount} / {todoChecklist.length || 0}
           </span>
         </p>
@@ -87,14 +87,14 @@ const TaskCard = ({
       <div className="px-4">
         <div className="flex items-center justify-between my-1">
           <div className="">
-            <label className="text-xs text-gray-500">Start Date</label>
-            <p className="text-[13px] font-medium text-gray-900">
+            <label className="text-xs text-gray-600 dark:text-gray-400">Start Date</label>
+            <p className="text-[13px] font-medium text-gray-900 dark:text-white">
               {moment(createdAt).format("Do MMM YYYY")}
             </p>
           </div>
           <div className="">
-            <label className="text-xs text-gray-500">Due Date</label>
-            <p className="text-[13px] font-medium text-gray-900">
+            <label className="text-xs text-gray-600 dark:text-gray-400">Due Date</label>
+            <p className="text-[13px] font-medium text-gray-900 dark:text-white">
               {moment(dueDate).format("Do MMM YYYY")}
             </p>
           </div>
@@ -103,9 +103,9 @@ const TaskCard = ({
         <div className="flex items-center justify-between mt-3">
           <AvatarGroup avatars={assignedTo || []} />
           {attachmentCount > 0 && (
-            <div className="flex items-center gap-2 bg-blue-50 px-2.5 py-1.5 rounded-lg">
+            <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1.5 rounded-lg">
               <LuPaperclip className="text-blue-600" />
-              <span className="text-xs text-gray-900">{attachmentCount}</span>
+              <span className="text-xs text-gray-900 dark:text-white">{attachmentCount}</span>
             </div>
           )}
         </div>

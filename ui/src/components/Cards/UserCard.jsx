@@ -3,7 +3,7 @@ import React from "react";
 
 const UserCard = ({ userInfo }) => {
   return (
-    <div className="user-card p-2">
+    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-md shadow-gray-100 dark:shadow-slate-900/50 border border-gray-200 dark:border-slate-700">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img
@@ -12,8 +12,8 @@ const UserCard = ({ userInfo }) => {
             className="w-12 h-12 rounded-full border-2 border-white"
           />
           <div>
-            <p className="text-sm font-medium">{userInfo?.name}</p>
-            <p className="text-xs text-gray-500">{userInfo?.email}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">{userInfo?.name}</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400">{userInfo?.email}</p>
           </div>
         </div>
       </div>
@@ -45,11 +45,11 @@ const StatCard = ({ label, count, status }) => {
   const getStatusTagColor = () => {
     switch (status) {
       case "In Progress":
-        return "text-cyan-500 bg-gray-50";
+        return "text-cyan-500 bg-gray-50 dark:bg-slate-700";
       case "Completed":
-        return "text-lime-500 bg-gray-50";
+        return "text-lime-500 bg-gray-50 dark:bg-slate-700";
       default:
-        return "text-violet-500 bg-gray-50";
+        return "text-violet-500 bg-gray-50 dark:bg-slate-700";
     }
   };
 
