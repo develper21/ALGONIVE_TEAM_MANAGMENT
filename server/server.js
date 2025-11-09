@@ -11,6 +11,10 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const taskRoutes = require("./routes/taskRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const messageRoutes = require("./routes/messageRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const workLogRoutes = require("./routes/workLogRoutes");
+const { startTaskNotificationCron } = require("./jobs/taskNotificationCron");
 
 const app = express();
 
@@ -65,6 +69,9 @@ app.use(
 //connectDB
 connectDB();
 
+// Start cron jobs for task notifications
+startTaskNotificationCron();
+
 //Middleware
 app.use(express.json({ limit: "10mb" })); // Limit payload size
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -80,6 +87,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/reports", reportRoutes);
+app.use("/api/messages", messageRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/worklogs", workLogRoutes);
+app.use("/api/discussions", require("./routes/teamDiscussionRoutes"));
 
 // serve uploads folder
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
