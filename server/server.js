@@ -1,100 +1,116 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
-const helmet = require("helmet");
-const connectDB = require("./config/db");
-const { apiLimiter } = require("./middlewares/securityMiddleware");
-const { sanitizeRequest } = require("./middlewares/sanitizeMiddleware");
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import authRoutes from './routes/authRoutes.js';
+import teamRoutes from './routes/teamRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import { startReminderJob } from './utils/reminderJob.js';
 
-const authRoutes = require("./routes/authRoutes");
-const userRoutes = require("./routes/userRoutes");
-const taskRoutes = require("./routes/taskRoutes");
-const reportRoutes = require("./routes/reportRoutes");
-const messageRoutes = require("./routes/messageRoutes");
-const notificationRoutes = require("./routes/notificationRoutes");
-const workLogRoutes = require("./routes/workLogRoutes");
-const { startTaskNotificationCron } = require("./jobs/taskNotificationCron");
+// Load environment variables
+dotenv.config();
 
 const app = express();
-
-// Security Headers - Helmet
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
-      },
-    },
-    crossOriginEmbedderPolicy: false,
-  })
-);
-
-//Middleware to handle cors
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      const allowedOrigins = [
-        process.env.CLIENT_URL,
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://127.0.0.1:5173',
-      ];
-      
-      // Remove trailing slash for comparison
-      const normalizedOrigin = origin.replace(/\/$/, '');
-      const isAllowed = allowedOrigins.some(allowed => 
-        allowed && (allowed.replace(/\/$/, '') === normalizedOrigin)
-      );
-      
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    credentials: true,
-    optionsSuccessStatus: 200,
-  })
-);
-
-//connectDB
-connectDB();
-
-// Start cron jobs for task notifications
-startTaskNotificationCron();
-
-//Middleware
-app.use(express.json({ limit: "10mb" })); // Limit payload size
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-
-// Custom sanitization middleware (Express v5 compatible)
-app.use(sanitizeRequest);
-
-// Apply rate limiting to all routes
-app.use("/api/", apiLimiter);
-
-//Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/tasks", taskRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/messages", messageRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/worklogs", workLogRoutes);
-app.use("/api/discussions", require("./routes/teamDiscussionRoutes"));
-
-// serve uploads folder
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-//start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`server running on ${PORT}`));
+
+// Middleware
+app.use(cors({
+  origin: true, // Allow all origins temporarily
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  next();
+});
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/teams', teamRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/notifications', notificationRoutes);
+
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Task Manager API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    success: true,
+    message: 'Welcome to Task Manager API',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      teams: '/api/teams',
+      tasks: '/api/tasks',
+      notifications: '/api/notifications'
+    }
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ 
+    success: false, 
+    message: 'Route not found' 
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ 
+    success: false, 
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// Connect to MongoDB and start server
+const startServer = async () => {
+  try {
+    // Check if MongoDB URL is provided
+    if (!process.env.MONGODB_URL) {
+      console.error('❌ MONGODB_URL is not defined in .env file');
+      console.log('Please create a .env file with your MongoDB Atlas connection string');
+      process.exit(1);
+    }
+
+    // Connect to MongoDB
+    await mongoose.connect(process.env.MONGODB_URL);
+    console.log('✅ Connected to MongoDB Atlas');
+
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
+      console.log(`📍 API URL: http://localhost:${PORT}`);
+      console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+    });
+
+    // Start reminder cron job
+    startReminderJob();
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Promise Rejection:', err);
+  process.exit(1);
+});
+
+// Start the server
+startServer();

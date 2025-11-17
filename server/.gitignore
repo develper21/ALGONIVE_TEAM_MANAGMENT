@@ -1,4 +1,4 @@
+node_modules/
 .env
-node_modules
-package-lock.json
-uploads
+.DS_Store
+*.log

@@ -1,60 +1,39 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
-const NotificationSchema = new mongoose.Schema(
-  {
-    recipient: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Recipient is required"],
-      index: true,
-    },
-    sender: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Sender is required"],
-    },
-    type: {
-      type: String,
-      enum: ["message", "task_assigned", "task_updated", "task_completed"],
-      required: true,
-    },
-    title: {
-      type: String,
-      required: [true, "Notification title is required"],
-      trim: true,
-    },
-    message: {
-      type: String,
-      required: [true, "Notification message is required"],
-      trim: true,
-    },
-    taskId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Task",
-      index: true,
-    },
-    messageId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Message",
-    },
-    isRead: {
-      type: Boolean,
-      default: false,
-      index: true,
-    },
-    readAt: {
-      type: Date,
-    },
+const notificationSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+  task: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Task'
+  },
+  type: {
+    type: String,
+    enum: ['deadline', 'assignment', 'status_change', 'team_invite', 'overdue'],
+    required: true
+  },
+  message: {
+    type: String,
+    required: true
+  },
+  read: {
+    type: Boolean,
+    default: false
+  },
+  link: {
+    type: String,
+    default: ''
   }
-);
+}, {
+  timestamps: true
+});
 
-// Index for faster queries
-NotificationSchema.index({ recipient: 1, isRead: 1, createdAt: -1 });
-NotificationSchema.index({ type: 1 });
+// Index for efficient queries
+notificationSchema.index({ user: 1, read: 1, createdAt: -1 });
 
-module.exports = mongoose.model("Notification", NotificationSchema);
+const Notification = mongoose.model('Notification', notificationSchema);
+
+export default Notification;

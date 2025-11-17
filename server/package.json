@@ -1,31 +1,27 @@
 {
-  "name": "task-manager",
+  "name": "algonive-taskmanager-backend",
   "version": "1.0.0",
+  "description": "Task Management System Backend for Small Teams",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": ["task-management", "team", "mern"],
+  "author": "Algonive",
+  "license": "MIT",
   "dependencies": {
-    "bcryptjs": "^3.0.2",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.2",
-    "exceljs": "^4.4.0",
-    "express": "^5.1.0",
-    "express-rate-limit": "^7.1.5",
-    "helmet": "^7.1.0",
+    "express": "^4.18.2",
+    "mongoose": "^8.0.3",
+    "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.18.1",
-    "multer": "^2.0.2",
-    "node-cron": "^4.2.1",
-    "nodemailer": "^7.0.10",
-    "validator": "^13.11.0"
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "nodemailer": "^6.9.7",
+    "node-cron": "^3.0.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.0.2"
   }
 }
