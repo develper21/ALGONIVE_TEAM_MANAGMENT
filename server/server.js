@@ -25,7 +25,6 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 const allowedOrigins = [
   process.env.CLIENT_URL,
-  process.env.ADMIN_URL
 ].filter(Boolean);
 
 const corsOptions = {
