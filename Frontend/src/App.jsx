@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { MessagingProvider } from './context/MessagingContext';
 import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -7,8 +8,8 @@ import Dashboard from './pages/Dashboard';
 import TaskBoard from './pages/TaskBoard';
 import TaskForm from './pages/TaskForm';
 import TeamPage from './pages/TeamPage';
-import NotificationPanel from './components/NotificationPanel';
-import { useState } from 'react';
+import Notifications from './pages/Notifications';
+import Messaging from './pages/Messaging';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -102,6 +103,22 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <Notifications />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/messaging"
+        element={
+          <ProtectedRoute>
+            <Messaging />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Default Route */}
       <Route path="/" element={<Navigate to="/dashboard" />} />
@@ -114,7 +131,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <MessagingProvider>
+          <AppRoutes />
+        </MessagingProvider>
         <Toaster
           position="top-right"
           toastOptions={{
