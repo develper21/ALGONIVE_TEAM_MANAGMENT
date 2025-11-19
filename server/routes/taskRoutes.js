@@ -1,14 +1,158 @@
 import express from 'express';
+import fs from 'fs';
+import multer from 'multer';
 import Task from '../models/Task.js';
 import Team from '../models/Team.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import TaskActivity from '../models/TaskActivity.js';
+import TaskAttachment from '../models/TaskAttachment.js';
 import { authMiddleware } from '../utils/authMiddleware.js';
 import { sendEmail, emailTemplates } from '../utils/emailService.js';
 import { recordTaskActivity } from '../utils/activityPublisher.js';
+import { ensureTaskUploadDir, getTaskRelativePath, detectFileType, resolveAttachmentPath } from '../utils/attachmentStorage.js';
 
 const router = express.Router();
+
+const attachmentStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    try {
+      const dir = ensureTaskUploadDir(req.params.id);
+      cb(null, dir);
+    } catch (error) {
+      cb(error);
+    }
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${uniqueSuffix}-${file.originalname}`);
+  }
+});
+
+const attachmentUpload = multer({
+  storage: attachmentStorage,
+  limits: {
+    fileSize: 25 * 1024 * 1024 // 25MB per file
+  }
+});
+
+const requireTaskAccess = async (taskId, user) => {
+  const task = await Task.findById(taskId).populate('team', 'members name color');
+  if (!task) {
+    const error = new Error('Task not found');
+    error.status = 404;
+    throw error;
+  }
+
+  const userId = user._id.toString();
+  const isMember = task.team?.members?.some((memberId) => memberId.toString() === userId);
+  const isCreator = task.createdBy.toString() === userId;
+
+  if (!isMember && !isCreator && user.role !== 'admin') {
+    const error = new Error('Access denied');
+    error.status = 403;
+    throw error;
+  }
+
+  return task;
+};
+
+// @route   POST /api/tasks/:id/attachments
+// @desc    Upload files for a task
+// @access  Private
+router.post('/:id/attachments', authMiddleware, attachmentUpload.array('files', 10), async (req, res) => {
+  try {
+    const task = await requireTaskAccess(req.params.id, req.user);
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, message: 'No files uploaded' });
+    }
+
+    const attachments = await Promise.all(req.files.map(async (file) => {
+      const relativePath = getTaskRelativePath(task._id, file.filename);
+      const fileType = detectFileType(file.mimetype, file.originalname);
+
+      const attachment = await TaskAttachment.create({
+        task: task._id,
+        uploadedBy: req.user._id,
+        originalName: file.originalname,
+        storedName: file.filename,
+        size: file.size,
+        mimeType: file.mimetype,
+        fileType,
+        relativePath
+      });
+
+      return attachment;
+    }));
+
+    res.status(201).json({
+      success: true,
+      attachments
+    });
+  } catch (error) {
+    console.error('Upload attachment error:', error);
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.message || 'Failed to upload attachments'
+    });
+  }
+});
+
+// @route   GET /api/tasks/:id/attachments
+// @desc    List attachments for a task
+// @access  Private
+router.get('/:id/attachments', authMiddleware, async (req, res) => {
+  try {
+    await requireTaskAccess(req.params.id, req.user);
+
+    const attachments = await TaskAttachment.find({ task: req.params.id })
+      .sort({ createdAt: -1 })
+      .populate('uploadedBy', 'name email');
+
+    res.json({
+      success: true,
+      attachments
+    });
+  } catch (error) {
+    console.error('List attachments error:', error);
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.message || 'Failed to fetch attachments'
+    });
+  }
+});
+
+// @route   GET /api/tasks/attachments/:attachmentId/download
+// @desc    Download a specific attachment
+// @access  Private
+router.get('/attachments/:attachmentId/download', authMiddleware, async (req, res) => {
+  try {
+    const attachment = await TaskAttachment.findById(req.params.attachmentId);
+    if (!attachment) {
+      return res.status(404).json({ success: false, message: 'Attachment not found' });
+    }
+
+    await requireTaskAccess(attachment.task, req.user);
+
+    const absolutePath = resolveAttachmentPath(attachment.relativePath);
+    if (!fs.existsSync(absolutePath)) {
+      return res.status(410).json({ success: false, message: 'Attachment file missing from storage' });
+    }
+
+    res.setHeader('Content-Type', attachment.mimeType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalName}"`);
+
+    const readStream = fs.createReadStream(absolutePath);
+    readStream.pipe(res);
+  } catch (error) {
+    console.error('Download attachment error:', error);
+    res.status(error.status || 500).json({
+      success: false,
+      message: error.message || 'Failed to download attachment'
+    });
+  }
+});
 
 // @route   POST /api/tasks
 // @desc    Create a new task
