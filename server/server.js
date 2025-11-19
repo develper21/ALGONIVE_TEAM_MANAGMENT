@@ -1,12 +1,20 @@
+import http from 'http';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { Server as SocketIOServer } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import authRoutes from './routes/authRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import messagingRoutes from './routes/messagingRoutes.js';
 import { startReminderJob } from './utils/reminderJob.js';
+import User from './models/User.js';
+import { initSocket } from './utils/socket.js';
+import { ensureConversationAccess } from './services/messagingService.js';
+import { setUserOnline, setUserOffline, getOnlineUserIds } from './utils/presenceStore.js';
 
 // Load environment variables
 dotenv.config();
@@ -15,10 +23,29 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({
-  origin: true, // Allow all origins temporarily
-  credentials: true
-}));
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.ADMIN_URL
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.warn(`Blocked CORS request from origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -33,6 +60,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/messaging', messagingRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -76,6 +104,86 @@ app.use((err, req, res, next) => {
   });
 });
 
+const httpServer = http.createServer(app);
+
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: allowedOrigins.length > 0 ? allowedOrigins : '*',
+    credentials: true
+  }
+});
+
+const broadcastPresence = () => {
+  const onlineUserIds = getOnlineUserIds();
+  io.emit('messaging:presence', { onlineUserIds });
+};
+
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token
+      || socket.handshake.headers?.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      return next(new Error('Authentication token required'));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('-passwordHash');
+
+    if (!user) {
+      return next(new Error('User not found'));
+    }
+
+    socket.data.user = user;
+    next();
+  } catch (error) {
+    next(new Error('Authentication failed'));
+  }
+});
+
+io.on('connection', (socket) => {
+  const user = socket.data.user;
+  const userRoom = `user:${user._id}`;
+  socket.join(userRoom);
+  setUserOnline(user._id, socket.id);
+  socket.emit('messaging:ready');
+  broadcastPresence();
+
+  socket.on('messaging:join', async ({ conversationId }) => {
+    if (!conversationId) {
+      return socket.emit('messaging:error', { message: 'conversationId is required' });
+    }
+
+    try {
+      const conversation = await ensureConversationAccess(user, conversationId);
+      socket.join(`conversation:${conversationId}`);
+      socket.emit('messaging:joined', {
+        conversationId,
+        retentionPolicy: conversation.retentionPolicy,
+        type: conversation.type
+      });
+    } catch (error) {
+      socket.emit('messaging:error', { message: error.message || 'Failed to join conversation' });
+    }
+  });
+
+  socket.on('messaging:leave', ({ conversationId }) => {
+    if (!conversationId) {
+      return;
+    }
+    socket.leave(`conversation:${conversationId}`);
+  });
+
+  socket.on('disconnect', () => {
+    const remaining = setUserOffline(user._id, socket.id);
+    if (remaining === 0) {
+      broadcastPresence();
+    }
+  });
+});
+
+initSocket(io);
+
 // Connect to MongoDB and start server
 const startServer = async () => {
   try {
@@ -91,7 +199,7 @@ const startServer = async () => {
     console.log('✅ Connected to MongoDB Atlas');
 
     // Start the server
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
       console.log(`📍 API URL: http://localhost:${PORT}`);
       console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
