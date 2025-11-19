@@ -1,15 +1,34 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Bell, LogOut, User, LayoutDashboard, Users } from 'lucide-react';
+import { Bell, LogOut, User, Menu } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { notificationAPI } from '../services/api';
-import NotificationPanel from './NotificationPanel';
 
-const Navbar = () => {
+const Navbar = ({ onToggleSidebar }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [showNotifications, setShowNotifications] = useState(false);
+
+  const getPageMeta = () => {
+    const { pathname } = location;
+    const routeMeta = {
+      '/dashboard': { title: 'Dashboard', subtitle: 'Overview & insights' },
+      '/teams': { title: 'Teams', subtitle: 'Members & collaboration' },
+      '/board': { title: 'Task Board', subtitle: 'Kanban workflow' },
+      '/tasks/new': { title: 'Create Task', subtitle: 'Plan fresh work' },
+      '/notifications': { title: 'Notifications', subtitle: 'Latest updates' },
+      '/tasks': { title: 'Tasks', subtitle: 'Manage tasks' }
+    };
+
+    if (pathname.startsWith('/tasks/') && pathname !== '/tasks/new') {
+      return { title: 'Task Details', subtitle: 'Review & edit' };
+    }
+
+    return routeMeta[pathname] || { title: 'Task Manager', subtitle: 'Everything in one place' };
+  };
+
+  const pageMeta = getPageMeta();
 
   useEffect(() => {
     fetchUnreadCount();
@@ -35,37 +54,38 @@ const Navbar = () => {
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/dashboard" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">A</span>
+          {/* Logo + mobile menu */}
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="lg:hidden p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
+              aria-label="Open navigation"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="flex items-center space-x-3">
+              <div className="hidden sm:flex flex-col">
+                <div className="mt-1">
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-900 text-sm font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-primary-500 block"></span>
+                    {pageMeta.title}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{pageMeta.subtitle}</p>
+              </div>
+              <div className="sm:hidden">
+                <p className="text-sm font-semibold text-gray-900">{pageMeta.title}</p>
+                <p className="text-xs text-gray-500">{pageMeta.subtitle}</p>
+              </div>
             </div>
-            <span className="text-xl font-bold text-gray-900">TaskManager</span>
-          </Link>
-
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-1">
-            <Link
-              to="/dashboard"
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <LayoutDashboard size={18} />
-              <span>Dashboard</span>
-            </Link>
-            <Link
-              to="/teams"
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <Users size={18} />
-              <span>Teams</span>
-            </Link>
           </div>
 
           {/* Right side */}
           <div className="flex items-center space-x-4">
             {/* Notifications */}
             <button
-              onClick={() => setShowNotifications(true)}
+              onClick={() => navigate('/notifications')}
               className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <Bell size={20} />
@@ -99,14 +119,6 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Notification Panel */}
-      <NotificationPanel 
-        isOpen={showNotifications} 
-        onClose={() => {
-          setShowNotifications(false);
-          fetchUnreadCount(); // Refresh count when panel closes
-        }} 
-      />
     </nav>
   );
 };
