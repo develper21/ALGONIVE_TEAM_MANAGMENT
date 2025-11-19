@@ -4,8 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import { taskAPI, teamAPI } from '../services/api';
 import Layout from '../components/Layout';
 import TaskCard from '../components/TaskCard';
-import { Plus, CheckCircle, Clock, AlertCircle, ListTodo, Users, TrendingUp } from 'lucide-react';
+import { Plus, CheckCircle, Clock, AlertCircle, ListTodo, Users, TrendingUp, Activity, Filter, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts';
+import { useMessaging } from '../context/MessagingContext';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -17,10 +19,13 @@ const Dashboard = () => {
     in_progress: 0,
     completed: 0,
     myTasks: 0,
-    overdue: 0
+    overdue: 0,
+    statusHistory: []
   });
+  const [activityFeed, setActivityFeed] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const { socketRef } = useMessaging();
 
   useEffect(() => {
     fetchData();
@@ -49,8 +54,17 @@ const Dashboard = () => {
         in_progress: statusStats.in_progress || 0,
         completed: statusStats.completed || 0,
         myTasks: statsRes.data.stats.myTasks || 0,
-        overdue: statsRes.data.stats.overdueTasks || 0
+        overdue: statsRes.data.stats.overdueTasks || 0,
+        statusHistory: statsRes.data.stats.statusHistory || []
       });
+
+      try {
+        const activityRes = await taskAPI.getActivityFeed({ limit: 20 });
+        setActivityFeed(activityRes.data.activities || []);
+      } catch (activityError) {
+        console.warn('Activity feed unavailable:', activityError);
+        setActivityFeed([]);
+      }
     } catch (error) {
       console.error('Failed to fetch data:', error);
       toast.error('Failed to load dashboard data');
@@ -58,6 +72,33 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket) return;
+
+    const handleActivity = (activity) => {
+      setActivityFeed((prev) => {
+        const next = [activity, ...prev];
+        return next.slice(0, 25);
+      });
+
+      if (activity.action === 'status_changed') {
+        setStats((prev) => ({
+          ...prev,
+          pending: Math.max(0, prev.pending - (activity.metadata?.fromStatus === 'pending' ? 1 : 0) + (activity.metadata?.toStatus === 'pending' ? 1 : 0)),
+          in_progress: Math.max(0, prev.in_progress - (activity.metadata?.fromStatus === 'in_progress' ? 1 : 0) + (activity.metadata?.toStatus === 'in_progress' ? 1 : 0)),
+          completed: Math.max(0, prev.completed - (activity.metadata?.fromStatus === 'completed' ? 1 : 0) + (activity.metadata?.toStatus === 'completed' ? 1 : 0))
+        }));
+      }
+    };
+
+    socket.on('dashboard:task-activity', handleActivity);
+
+    return () => {
+      socket.off('dashboard:task-activity', handleActivity);
+    };
+  }, [socketRef]);
 
   const getFilteredTasks = () => {
     switch (filter) {
@@ -87,55 +128,152 @@ const Dashboard = () => {
           <p className="text-gray-600 mt-2">Here's what's happening with your tasks today.</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          <div className="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-            <div className="flex items-center justify-between">
+        {/* Status Snapshot */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+          <div className="xl:col-span-2 card">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-blue-100 text-sm">Pending</p>
-                <p className="text-3xl font-bold mt-1">{stats.pending}</p>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Task Status Overview</p>
+                <h3 className="text-xl font-bold text-gray-900">Current Workload</h3>
               </div>
-              <Clock className="opacity-80" size={32} />
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-800">
+                    <Activity size={14} /> Live
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              {[
+                { label: 'Pending', value: stats.pending, icon: Clock, color: 'from-blue-500 to-blue-600' },
+                { label: 'In Progress', value: stats.in_progress, icon: TrendingUp, color: 'from-amber-500 to-amber-600' },
+                { label: 'Completed', value: stats.completed, icon: CheckCircle, color: 'from-green-500 to-green-600' },
+                { label: 'Overdue', value: stats.overdue, icon: AlertCircle, color: 'from-red-500 to-red-600' }
+              ].map(({ label, value, icon: Icon, color }) => (
+                <div key={label} className={`rounded-2xl p-4 text-white bg-gradient-to-br ${color}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-white/70">{label}</p>
+                      <p className="text-3xl font-bold mt-1">{value}</p>
+                    </div>
+                    <Icon size={28} className="opacity-80" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.statusHistory} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="statusGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#6366f1" stopOpacity={0.2} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                  <YAxis allowDecimals={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                  <Tooltip cursor={{ fill: '#f9fafb' }} />
+                  <Bar dataKey="count" fill="url(#statusGradient)" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="card bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
-            <div className="flex items-center justify-between">
+          <div className="card flex flex-col">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-yellow-100 text-sm">In Progress</p>
-                <p className="text-3xl font-bold mt-1">{stats.in_progress}</p>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">My Queue</p>
+                <h3 className="text-xl font-bold text-gray-900">Assigned To Me</h3>
               </div>
-              <TrendingUp className="opacity-80" size={32} />
+              <ListTodo className="text-primary-500" />
+            </div>
+            <div className="flex-1 flex flex-col justify-between">
+              <div>
+                <p className="text-4xl font-bold text-gray-900">{stats.myTasks}</p>
+                <p className="text-sm text-gray-500 mt-1">Active tasks awaiting your action</p>
+              </div>
+              <div className="mt-6 space-y-2">
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                  <span>Keep the flow going by updating statuses</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span>{stats.overdue} tasks overdue across your teams</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setFilter('my')}
+                className="btn btn-primary mt-6 inline-flex items-center gap-2"
+              >
+                <Filter size={16} /> Focus on my tasks
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Activity Feed */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2 card">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Activity Feed</p>
+                <h3 className="text-xl font-bold text-gray-900">Team Movements</h3>
+              </div>
+              <button
+                onClick={fetchData}
+                className="text-sm text-primary-600 inline-flex items-center gap-2"
+              >
+                <Zap size={16} /> Refresh
+              </button>
+            </div>
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+              {activityFeed.length === 0 ? (
+                <p className="text-sm text-gray-500">No recent activity. Make some updates to see them here.</p>
+              ) : (
+                activityFeed.map((activity) => (
+                  <div key={activity.id || activity._id} className="p-3 rounded-xl border border-gray-100 hover:border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                          <Activity className="text-primary-500" size={18} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {activity.actor?.name || 'Someone'}
+                            <span className="text-gray-500 font-normal"> • {activity.team?.name}</span>
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {activity.action === 'task_created' && 'created a task'}
+                            {activity.action === 'status_changed' && `moved to ${activity.metadata?.toStatus}`}
+                            {activity.action === 'assignment_changed' && 'changed assignment'}
+                            {activity.action === 'priority_changed' && `changed priority to ${activity.metadata?.toPriority}`}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400">{new Date(activity.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-2">{activity.task?.title || 'Task'} </p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
-          <div className="card bg-gradient-to-br from-green-500 to-green-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-sm">Completed</p>
-                <p className="text-3xl font-bold mt-1">{stats.completed}</p>
-              </div>
-              <CheckCircle className="opacity-80" size={32} />
-            </div>
-          </div>
-
-          <div className="card bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-sm">My Tasks</p>
-                <p className="text-3xl font-bold mt-1">{stats.myTasks}</p>
-              </div>
-              <ListTodo className="opacity-80" size={32} />
-            </div>
-          </div>
-
-          <div className="card bg-gradient-to-br from-red-500 to-red-600 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-red-100 text-sm">Overdue</p>
-                <p className="text-3xl font-bold mt-1">{stats.overdue}</p>
-              </div>
-              <AlertCircle className="opacity-80" size={32} />
+          <div className="card">
+            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Status Trends</p>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.statusHistory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <XAxis dataKey="date" tick={{ fill: '#6b7280', fontSize: 12 }} />
+                  <YAxis allowDecimals={false} tick={{ fill: '#6b7280', fontSize: 12 }} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="count" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
@@ -220,7 +358,7 @@ const Dashboard = () => {
               <TaskCard
                 key={task._id}
                 task={task}
-                onClick={() => navigate(`/tasks/${task._id}`)}
+                onClick={() => navigate(`/tasks/${task._id}/workspace`)}
               />
             ))}
           </div>
