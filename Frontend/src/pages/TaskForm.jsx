@@ -125,22 +125,25 @@ const TaskForm = () => {
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-0 py-8 space-y-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => navigate(-1)}
-              className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              aria-label="Go back"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} />
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {isEdit ? 'Edit Task' : 'Create New Task'}
+              <p className="text-xs uppercase tracking-wide text-gray-500">
+                {isEdit ? 'Update Task' : 'New Task Intake'}
+              </p>
+              <h1 className="text-3xl font-semibold text-gray-900">
+                {isEdit ? formData.title || 'Untitled Task' : 'Create a Task Brief'}
               </h1>
-              <p className="text-gray-600 mt-1">
-                {isEdit ? 'Update task details' : 'Add a new task to your team'}
+              <p className="text-gray-600 text-sm mt-1">
+                Align scope, ownership, and timelines so your team can ship with confidence.
               </p>
             </div>
           </div>
@@ -148,181 +151,173 @@ const TaskForm = () => {
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="btn btn-danger inline-flex items-center space-x-2"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
             >
-              {deleting ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                <Trash2 size={18} />
-              )}
-              <span>Delete</span>
+              {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+              <span>Delete task</span>
             </button>
           )}
         </div>
 
-        {/* Form */}
-        <div className="card">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Title */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Task Title *
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="input"
-                placeholder="Enter task title"
-                required
-              />
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="input min-h-[120px]"
-                placeholder="Enter task description"
-                rows={5}
-              />
-            </div>
-
-            {/* Team and Assignee */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Team *
-                </label>
-                <select
-                  value={formData.team}
-                  onChange={(e) => setFormData({ ...formData, team: e.target.value, assignee: '' })}
-                  className="input"
-                  required
-                >
-                  <option value="">Select a team</option>
-                  {teams.map((team) => (
-                    <option key={team._id} value={team._id}>
-                      {team.name}
-                    </option>
-                  ))}
-                </select>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="grid lg:grid-cols-3 gap-6">
+            <section className="lg:col-span-2 space-y-6">
+              <div className="card space-y-5">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Task title *</label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="input mt-2"
+                    placeholder="eg. Launch billing experiments for Q4"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Narrative & requirements</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="input mt-2 min-h-[160px]"
+                    placeholder="Share the problem context, definition of done, blockers, and linked specs."
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Assign To
-                </label>
-                <select
-                  value={formData.assignee}
-                  onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
-                  className="input"
-                  disabled={!formData.team}
-                >
-                  <option value="">Unassigned</option>
-                  {teamMembers.map((member) => (
-                    <option key={member._id} value={member._id}>
-                      {member.name} ({member.email})
-                    </option>
-                  ))}
-                </select>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="card space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Team *</label>
+                    <select
+                      value={formData.team}
+                      onChange={(e) => setFormData({ ...formData, team: e.target.value, assignee: '' })}
+                      className="input mt-2"
+                      required
+                    >
+                      <option value="">Select delivery team</option>
+                      {teams.map((team) => (
+                        <option key={team._id} value={team._id}>
+                          {team.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Assignee</label>
+                    <select
+                      value={formData.assignee}
+                      onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
+                      className="input mt-2"
+                      disabled={!formData.team}
+                    >
+                      <option value="">Unassigned</option>
+                      {teamMembers.map((member) => (
+                        <option key={member._id} value={member._id}>
+                          {member.name} ({member.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="card space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                      className="input mt-2"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Priority</label>
+                    <select
+                      value={formData.priority}
+                      onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                      className="input mt-2"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Status and Priority */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Status
-                </label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="input"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                </select>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="card space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Due date</label>
+                  <input
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className="input"
+                  />
+                  <p className="text-xs text-gray-500">Used to surface the task in timeline & reminders.</p>
+                </div>
+                <div className="card space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Tags</label>
+                  <input
+                    type="text"
+                    value={formData.tags}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    className="input"
+                    placeholder="frontend, billing, hotfix"
+                  />
+                  <p className="text-xs text-gray-500">Comma separate multiple tags for reporting.</p>
+                </div>
+              </div>
+            </section>
+
+            <aside className="space-y-6">
+              <div className="card space-y-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Checklist</p>
+                  <p className="text-xs text-gray-500">Ensure the brief is actionable before publishing.</p>
+                </div>
+                <ul className="space-y-3 text-sm text-gray-600">
+                  <li>• Add context and links to specs</li>
+                  <li>• Confirm owner & stakeholders</li>
+                  <li>• Attach timelines and SLA expectations</li>
+                </ul>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Priority
-                </label>
-                <select
-                  value={formData.priority}
-                  onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                  className="input"
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
+              <div className="card bg-gray-50 space-y-3">
+                <p className="text-sm font-semibold text-gray-800">Need to upload briefs?</p>
+                <p className="text-sm text-gray-600">Attach PDFs, Loom links, or PRDs after creating the task from the workspace view.</p>
               </div>
-            </div>
+            </aside>
+          </div>
 
-            {/* Due Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Due Date
-              </label>
-              <input
-                type="date"
-                value={formData.dueDate}
-                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                className="input"
-              />
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4">
+            <div className="text-sm text-gray-500">
+              {isEdit ? 'Last updated moments ago · changes auto-tracked' : 'Draft tasks stay in pending until scheduled'}
             </div>
-
-            {/* Tags */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tags
-              </label>
-              <input
-                type="text"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                className="input"
-                placeholder="Enter tags separated by commas (e.g., frontend, urgent, bug)"
-              />
-              <p className="text-xs text-gray-500 mt-1">Separate multiple tags with commas</p>
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="btn btn-secondary"
-              >
+            <div className="flex gap-3">
+              <button type="button" onClick={() => navigate(-1)} className="btn btn-secondary">
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary inline-flex items-center space-x-2"
-              >
+              <button type="submit" disabled={loading} className="btn btn-primary inline-flex items-center gap-2">
                 {loading ? (
                   <>
-                    <Loader2 className="animate-spin" size={18} />
+                    <Loader2 size={16} className="animate-spin" />
                     <span>Saving...</span>
                   </>
                 ) : (
                   <>
-                    <Save size={18} />
-                    <span>{isEdit ? 'Update Task' : 'Create Task'}</span>
+                    <Save size={16} />
+                    <span>{isEdit ? 'Update task' : 'Create task'}</span>
                   </>
                 )}
               </button>
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </Layout>
   );
