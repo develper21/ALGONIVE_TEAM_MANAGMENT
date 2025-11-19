@@ -49,7 +49,7 @@ export const emailTemplates = {
         <p style="margin: 0; color: #6b7280;">Due Date: ${new Date(dueDate).toLocaleDateString()}</p>
       </div>
       <p>Log in to your dashboard to view details and start working on it.</p>
-      <a href="${process.env.FRONTEND_URL}/dashboard" style="display: inline-block; background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">View Task</a>
+      <a href="${process.env.CLIENT_URL}/dashboard" style="display: inline-block; background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">View Task</a>
     </div>
   `,
   
@@ -63,7 +63,7 @@ export const emailTemplates = {
         <p style="margin: 0; color: #7f1d1d; font-weight: bold;">Due in ${hoursLeft} hours</p>
       </div>
       <p>Please complete the task before the deadline.</p>
-      <a href="${process.env.FRONTEND_URL}/dashboard" style="display: inline-block; background: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">View Task</a>
+      <a href="${process.env.CLIENT_URL}/dashboard" style="display: inline-block; background: #ef4444; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">View Task</a>
     </div>
   `,
   
@@ -78,7 +78,7 @@ export const emailTemplates = {
           Status: <span style="text-decoration: line-through;">${oldStatus}</span> → <strong style="color: #10b981;">${newStatus}</strong>
         </p>
       </div>
-      <a href="${process.env.FRONTEND_URL}/dashboard" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">View Task</a>
+      <a href="${process.env.CLIENT_URL}/dashboard" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">View Task</a>
     </div>
   `,
 
@@ -92,7 +92,7 @@ export const emailTemplates = {
         <p style="margin: 0; color: #7f1d1d; font-weight: bold;">⚠️ Overdue by ${daysOverdue} day(s)</p>
       </div>
       <p>Please complete this task as soon as possible or update its status.</p>
-      <a href="${process.env.FRONTEND_URL}/dashboard" style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">Complete Task Now</a>
+      <a href="${process.env.CLIENT_URL}/dashboard" style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 10px;">Complete Task Now</a>
     </div>
   `
 };
