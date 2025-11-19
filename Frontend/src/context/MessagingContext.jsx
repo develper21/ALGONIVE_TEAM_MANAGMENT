@@ -358,7 +358,8 @@ export const MessagingProvider = ({ children }) => {
     exportConversation,
     searchConversationMessages,
     setActiveConversationId,
-    setOnlineUserIds
+    setOnlineUserIds,
+    socketRef
   };
 
   return (
