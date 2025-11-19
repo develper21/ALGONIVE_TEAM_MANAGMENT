@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { taskAPI, teamAPI } from '../services/api';
-import Navbar from '../components/Navbar';
+import Layout from '../components/Layout';
 import TaskCard from '../components/TaskCard';
 import { Plus, CheckCircle, Clock, AlertCircle, ListTodo, Users, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -77,10 +77,8 @@ const Dashboard = () => {
   const filteredTasks = getFilteredTasks();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Layout>
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -228,7 +226,7 @@ const Dashboard = () => {
           </div>
         )}
       </div>
-    </div>
+    </Layout>
   );
 };
 
